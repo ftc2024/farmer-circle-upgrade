@@ -70,6 +70,11 @@ export function DailyBiasClient({ role }: { role: UserRole }) {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canManage(role)) return;
+    if (file && (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024)) {
+      setMessage({ text: "Screenshot harus JPG/PNG/WebP maksimal 10MB.", error: true });
+      return;
+    }
+
     const supabase = createClient();
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
@@ -82,21 +87,22 @@ export function DailyBiasClient({ role }: { role: UserRole }) {
     const biasId = data.id as string;
 
     if (file) {
-      if (!["image/jpeg", "image/png", "image/webp"].includes(file.type) || file.size > 10 * 1024 * 1024) {
-        setMessage({ text: "Screenshot harus JPG/PNG/WebP maksimal 10MB.", error: true });
-        return;
-      }
       const ext = file.name.split(".").pop() || "jpg";
       const path = `${auth.user.id}/${biasId}/${Date.now()}.${ext}`;
       const upload = await supabase.storage.from("daily-bias-screenshots").upload(path, file, { contentType: file.type, upsert: false });
       if (upload.error) { setMessage({ text: upload.error.message, error: true }); return; }
-      await supabase.from("drive_files").insert({
+      const metadataInsert = await supabase.from("drive_files").insert({
         owner_user_id: auth.user.id, uploaded_by: auth.user.id,
         folder_type: "daily_bias_screenshots", related_table: "daily_biases", related_id: biasId,
         title: form.title, original_filename: file.name, mime_type: file.type, file_size_bytes: file.size,
         drive_file_id: `supabase:daily-bias-screenshots:${path}`, drive_folder_id: "daily-bias-screenshots",
         visibility: "member", metadata: { provider: "supabase_storage", bucket: "daily-bias-screenshots", path }
       });
+      if (metadataInsert.error) {
+        await supabase.storage.from("daily-bias-screenshots").remove([path]);
+        setMessage({ text: `Metadata screenshot gagal disimpan: ${metadataInsert.error.message}`, error: true });
+        return;
+      }
     }
 
     setForm({ title: "", market: "", direction: "bullish", content: "" });
