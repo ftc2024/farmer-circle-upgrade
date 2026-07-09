@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile, UserRole } from "@/types/domain";
+import type { Profile } from "@/types/domain";
 
 export async function requireUser() {
   const supabase = await createClient();
@@ -26,7 +26,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     return {
       id: user.id,
       full_name: user.user_metadata.full_name ?? null,
-      role: (user.user_metadata.role as UserRole | undefined) ?? "member",
+      role: "member",
       phone: null,
       first_name: null,
       last_name: null,
