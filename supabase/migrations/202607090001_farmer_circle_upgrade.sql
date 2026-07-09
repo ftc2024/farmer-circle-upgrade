@@ -90,13 +90,29 @@ alter table public.daily_biases enable row level security;
 alter table public.learning_attendance enable row level security;
 alter table public.drive_files enable row level security;
 
+-- Upgrade an existing legacy profiles table before granting column-level privileges.
+alter table public.profiles
+  add column if not exists phone text,
+  add column if not exists first_name text,
+  add column if not exists last_name text,
+  add column if not exists bio text,
+  add column if not exists address text,
+  add column if not exists city text,
+  add column if not exists country text,
+  add column if not exists avatar_url text,
+  add column if not exists avatar_path text,
+  add column if not exists created_at timestamptz not null default now(),
+  add column if not exists updated_at timestamptz not null default now();
+
 -- Role is administrator-controlled; authenticated members cannot self-promote.
-revoke update (role) on public.profiles from authenticated;
+revoke update on public.profiles from authenticated;
+grant update (full_name, phone, first_name, last_name, bio, address, city, country, avatar_url, avatar_path)
+  on public.profiles to authenticated;
 
 drop policy if exists "profiles_select_own" on public.profiles;
 create policy "profiles_select_own" on public.profiles for select to authenticated using (auth.uid() = id);
 drop policy if exists "profiles_insert_own" on public.profiles;
-create policy "profiles_insert_own" on public.profiles for insert to authenticated with check (auth.uid() = id);
+create policy "profiles_insert_own" on public.profiles for insert to authenticated with check (auth.uid() = id and role = 'member');
 drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles for update to authenticated using (auth.uid() = id) with check (auth.uid() = id);
 
