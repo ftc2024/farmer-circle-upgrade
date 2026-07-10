@@ -1,5 +1,13 @@
 import type { BiasDirection, TradeDirection, UserRole } from "@/types/domain";
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
 type RowTable<Row, Insert, Update = Partial<Insert>> = {
   Row: Row;
   Insert: Insert;
@@ -7,7 +15,14 @@ type RowTable<Row, Insert, Update = Partial<Insert>> = {
   Relationships: [];
 };
 
-export interface Database {
+type EmptySchemaRecord = {
+  [_ in never]: never;
+};
+
+export type Database = {
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.2";
+  };
   public: {
     Tables: {
       profiles: RowTable<
@@ -68,7 +83,7 @@ export interface Database {
           title: string | null; original_filename: string | null; mime_type: string | null;
           file_size_bytes: number | null; drive_file_id: string; drive_folder_id: string | null;
           web_view_link: string | null; web_content_link: string | null; thumbnail_link: string | null;
-          visibility: "private" | "member" | "public"; metadata: Record<string, unknown>;
+          visibility: "private" | "member" | "public"; metadata: Json;
           created_at: string | null; updated_at: string | null;
         },
         {
@@ -77,14 +92,14 @@ export interface Database {
           title?: string | null; original_filename?: string | null; mime_type?: string | null;
           file_size_bytes?: number | null; drive_file_id: string; drive_folder_id?: string | null;
           web_view_link?: string | null; web_content_link?: string | null; thumbnail_link?: string | null;
-          visibility?: "private" | "member" | "public"; metadata?: Record<string, unknown>;
+          visibility?: "private" | "member" | "public"; metadata?: Json;
           created_at?: string; updated_at?: string;
         }
       >;
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    Views: EmptySchemaRecord;
+    Functions: EmptySchemaRecord;
+    Enums: EmptySchemaRecord;
+    CompositeTypes: EmptySchemaRecord;
   };
-}
+};
